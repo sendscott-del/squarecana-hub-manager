@@ -26,7 +26,6 @@ const AuthContext = createContext<AuthContextType>({
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-// Direct REST fetch to avoid any client-side SDK hanging issues
 async function fetchFromSupabase(path: string, token?: string) {
   const headers: Record<string, string> = {
     'apikey': SUPABASE_KEY,
@@ -48,24 +47,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadUserData = async (authUser: User, token: string) => {
     try {
-      console.log('[auth] user id:', authUser.id, 'email:', authUser.email)
-
-      // Fetch profile — let RLS filter by auth.uid(), don't filter by id in URL
       const profiles = await fetchFromSupabase(
-        `sq_users?select=*&limit=10`,
+        `sq_users?id=eq.${authUser.id}&select=*`,
         token
       )
-      console.log('[auth] profile result:', profiles)
       if (profiles && profiles.length > 0) {
         setProfile(profiles[0])
       }
 
-      // Fetch demo mode
       const settings = await fetchFromSupabase(
         `sq_settings?key=eq.demo_mode&select=value`,
         token
       )
-      console.log('[auth] settings result:', settings)
       if (settings && settings.length > 0) {
         setDemoMode(settings[0].value === 'true')
       }
@@ -93,10 +86,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const supabase = createClient()
 
-    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('[auth] state change:', event, session?.user?.email)
         const authUser = session?.user ?? null
         setUser(authUser)
 
@@ -110,9 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     )
 
-    // Safety timeout
     const timeout = setTimeout(() => {
-      console.log('[auth] timeout — forcing loading=false')
       setLoading(false)
     }, 3000)
 
