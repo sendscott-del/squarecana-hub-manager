@@ -7,9 +7,6 @@ import { Toaster } from 'sonner'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
-// Force all pages to render dynamically (auth-gated app, no static pages)
-export const dynamic = 'force-dynamic'
-
 export const metadata: Metadata = {
   title: 'Squarecana Talent Hub Manager',
   description: 'Manage global talent hubs, contracts, and operations',
