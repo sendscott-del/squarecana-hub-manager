@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { AppUser } from '@/lib/types'
 import type { User } from '@supabase/supabase-js'
@@ -23,43 +23,61 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 })
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+
+// Direct REST fetch to avoid any client-side SDK hanging issues
+async function fetchFromSupabase(path: string, token?: string) {
+  const headers: Record<string, string> = {
+    'apikey': SUPABASE_KEY,
+    'Content-Type': 'application/json',
+  }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers })
+  if (!res.ok) return null
+  return res.json()
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<AppUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [demoMode, setDemoMode] = useState(false)
 
-  const loadProfile = useCallback(async (userId: string) => {
+  const loadUserData = async (authUser: User, token: string) => {
     try {
-      const supabase = createClient()
-      const { data } = await supabase
-        .from('sq_users')
-        .select('*')
-        .eq('id', userId)
-        .single()
-      if (data) setProfile(data)
-    } catch (e) {
-      console.error('[auth] profile error:', e)
-    }
-  }, [])
+      // Fetch profile via direct REST
+      const profiles = await fetchFromSupabase(
+        `sq_users?id=eq.${authUser.id}&select=*`,
+        token
+      )
+      console.log('[auth] profile result:', profiles)
+      if (profiles && profiles.length > 0) {
+        setProfile(profiles[0])
+      }
 
-  const loadDemoMode = useCallback(async () => {
-    try {
-      const supabase = createClient()
-      const { data } = await supabase
-        .from('sq_settings')
-        .select('value')
-        .eq('key', 'demo_mode')
-        .maybeSingle()
-      setDemoMode(data?.value === 'true')
+      // Fetch demo mode
+      const settings = await fetchFromSupabase(
+        `sq_settings?key=eq.demo_mode&select=value`,
+        token
+      )
+      console.log('[auth] settings result:', settings)
+      if (settings && settings.length > 0) {
+        setDemoMode(settings[0].value === 'true')
+      }
     } catch (e) {
-      console.error('[auth] demo mode error:', e)
+      console.error('[auth] load data error:', e)
     }
-  }, [])
+  }
 
   const refreshProfile = async () => {
-    if (user) await loadProfile(user.id)
-    await loadDemoMode()
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user && session.access_token) {
+      await loadUserData(session.user, session.access_token)
+    }
   }
 
   const signOut = async () => {
@@ -73,16 +91,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const supabase = createClient()
 
-    // Listen for auth changes (sign in, sign out, token refresh)
+    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('[auth] state change:', event, session?.user?.email)
         const authUser = session?.user ?? null
         setUser(authUser)
 
-        if (authUser) {
-          await loadProfile(authUser.id)
-          await loadDemoMode()
+        if (authUser && session?.access_token) {
+          await loadUserData(authUser, session.access_token)
         } else {
           setProfile(null)
         }
@@ -90,20 +107,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false)
       }
     )
-
-    // Also check for existing session without blocking
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('[auth] initial session:', session?.user?.email ?? 'none')
-      if (session?.user) {
-        setUser(session.user)
-        loadProfile(session.user.id)
-        loadDemoMode()
-      }
-      setLoading(false)
-    }).catch(() => {
-      console.log('[auth] getSession failed, continuing without session')
-      setLoading(false)
-    })
 
     // Safety timeout
     const timeout = setTimeout(() => {
@@ -115,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(timeout)
       subscription.unsubscribe()
     }
-  }, [loadProfile, loadDemoMode])
+  }, [])
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, demoMode, refreshProfile, signOut }}>

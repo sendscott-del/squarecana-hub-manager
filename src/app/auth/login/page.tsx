@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +13,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
   const supabase = createClient()
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -33,22 +31,8 @@ export default function LoginPage() {
       return
     }
 
-    // Check user status
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      const { data: profile } = await supabase
-        .from('sq_users')
-        .select('status')
-        .eq('id', user.id)
-        .single() as { data: { status: string } | null }
-
-      if (profile?.status === 'pending') {
-        router.push('/auth/pending')
-      } else {
-        router.push('/dashboard')
-      }
-    }
-    setLoading(false)
+    // Sign-in succeeded — redirect immediately, AuthProvider handles the rest
+    window.location.href = '/dashboard'
   }
 
   return (

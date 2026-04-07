@@ -8,12 +8,6 @@ export function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-  client = createSupabaseClient(url, key, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-    },
-  })
+  client = createSupabaseClient(url, key)
   return client
 }
