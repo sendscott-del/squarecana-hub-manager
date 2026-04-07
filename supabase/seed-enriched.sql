@@ -198,7 +198,7 @@ VALUES
 -- 3. INSERT Invoice Reminders (sq_invoice_reminders)
 -- ============================================================
 
-INSERT INTO sq_invoice_reminders (invoice_id, sent_to, reminder_type, sent_at)
+INSERT INTO sq_invoice_reminders (invoice_id, sent_to_user_id, reminder_type, sent_at)
 VALUES
   ('66666666-6666-6666-6666-666666660101', '22222222-2222-2222-2222-222222222201', 'initial_notification', '2024-11-02T09:00:00Z'),
   ('66666666-6666-6666-6666-666666660101', '22222222-2222-2222-2222-222222222201', 'follow_up', '2024-11-27T09:00:00Z'),
