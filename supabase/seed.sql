@@ -13,15 +13,43 @@ INSERT INTO sq_settings (key, value) VALUES
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 
 -- ---------------------------------------------------------------------------
+-- 1b. Create demo users in auth.users (required for sq_users FK)
+-- ---------------------------------------------------------------------------
+INSERT INTO auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, aud, role)
+VALUES
+  ('22222222-2222-2222-2222-222222222201', '00000000-0000-0000-0000-000000000000', 'maria.santos@example.com',   crypt('demo1234', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Maria Santos"}',   now(), now(), 'authenticated', 'authenticated'),
+  ('22222222-2222-2222-2222-222222222202', '00000000-0000-0000-0000-000000000000', 'james.mitchell@example.com', crypt('demo1234', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"James Mitchell"}', now(), now(), 'authenticated', 'authenticated'),
+  ('22222222-2222-2222-2222-222222222203', '00000000-0000-0000-0222-000000000000', 'priya.sharma@example.com',   crypt('demo1234', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Priya Sharma"}',   now(), now(), 'authenticated', 'authenticated'),
+  ('22222222-2222-2222-2222-222222222204', '00000000-0000-0000-0000-000000000000', 'robert.chen@example.com',    crypt('demo1234', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Robert Chen"}',    now(), now(), 'authenticated', 'authenticated')
+ON CONFLICT (id) DO NOTHING;
+
+-- Also create identities for auth to work
+INSERT INTO auth.identities (id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+VALUES
+  ('22222222-2222-2222-2222-222222222201', '22222222-2222-2222-2222-222222222201', 'maria.santos@example.com',   '{"sub":"22222222-2222-2222-2222-222222222201","email":"maria.santos@example.com"}',   'email', now(), now(), now()),
+  ('22222222-2222-2222-2222-222222222202', '22222222-2222-2222-2222-222222222202', 'james.mitchell@example.com', '{"sub":"22222222-2222-2222-2222-222222222202","email":"james.mitchell@example.com"}', 'email', now(), now(), now()),
+  ('22222222-2222-2222-2222-222222222203', '22222222-2222-2222-2222-222222222203', 'priya.sharma@example.com',   '{"sub":"22222222-2222-2222-2222-222222222203","email":"priya.sharma@example.com"}',   'email', now(), now(), now()),
+  ('22222222-2222-2222-2222-222222222204', '22222222-2222-2222-2222-222222222204', 'robert.chen@example.com',    '{"sub":"22222222-2222-2222-2222-222222222204","email":"robert.chen@example.com"}',    'email', now(), now(), now())
+ON CONFLICT DO NOTHING;
+
+-- Delete any auto-created sq_users from the trigger (we'll insert with correct data below)
+DELETE FROM sq_users WHERE id IN (
+  '22222222-2222-2222-2222-222222222201',
+  '22222222-2222-2222-2222-222222222202',
+  '22222222-2222-2222-2222-222222222203',
+  '22222222-2222-2222-2222-222222222204'
+);
+
+-- ---------------------------------------------------------------------------
 -- 2. Hubs
 -- ---------------------------------------------------------------------------
-INSERT INTO sq_hubs (id, name, city, country, region, hub_type, vendor_name, status, created_at) VALUES
-  ('11111111-1111-1111-1111-111111111101', 'Bogota Hub',        'Bogota',       'Colombia',     'LATAM',  'vendor',   'Vendor C', 'active', '2021-06-15T00:00:00Z'),
-  ('11111111-1111-1111-1111-111111111102', 'Bangalore Vendor Hub','Bangalore',  'India',        'APAC',   'vendor',   'Vendor G', 'active', '2022-03-01T00:00:00Z'),
-  ('11111111-1111-1111-1111-111111111103', 'Bangalore Internal Hub','Bangalore','India',        'APAC',   'internal', NULL,       'active', '2022-01-10T00:00:00Z'),
-  ('11111111-1111-1111-1111-111111111104', 'Baroda Hub',        'Baroda',       'India',        'APAC',   'internal', NULL,       'active', '2022-07-20T00:00:00Z'),
-  ('11111111-1111-1111-1111-111111111105', 'Athens Hub',        'Athens',       'Greece',       'EMEA',   'internal', NULL,       'active', '2023-02-01T00:00:00Z'),
-  ('11111111-1111-1111-1111-111111111106', 'South Africa Hub',  'Johannesburg', 'South Africa', 'EMEA',   'internal', NULL,       'active', '2023-05-15T00:00:00Z');
+INSERT INTO sq_hubs (id, name, location_city, location_country, hub_type, vendor_name, is_active, created_at) VALUES
+  ('11111111-1111-1111-1111-111111111101', 'Bogota Hub',             'Bogota',       'Colombia',     'vendor',   'Vendor C', true, '2021-06-15T00:00:00Z'),
+  ('11111111-1111-1111-1111-111111111102', 'Bangalore Vendor Hub',   'Bangalore',    'India',        'vendor',   'Vendor G', true, '2022-03-01T00:00:00Z'),
+  ('11111111-1111-1111-1111-111111111103', 'Bangalore Internal Hub', 'Bangalore',    'India',        'internal', NULL,       true, '2022-01-10T00:00:00Z'),
+  ('11111111-1111-1111-1111-111111111104', 'Baroda Hub',             'Baroda',       'India',        'internal', NULL,       true, '2022-07-20T00:00:00Z'),
+  ('11111111-1111-1111-1111-111111111105', 'Athens Hub',             'Athens',       'Greece',       'internal', NULL,       true, '2023-02-01T00:00:00Z'),
+  ('11111111-1111-1111-1111-111111111106', 'South Africa Hub',       'Johannesburg', 'South Africa', 'internal', NULL,       true, '2023-05-15T00:00:00Z');
 
 -- ---------------------------------------------------------------------------
 -- 3. Demo Users
@@ -254,14 +282,14 @@ INSERT INTO sq_headcount (id, hub_id, employee_name, role_title, role_type, depa
 -- ---------------------------------------------------------------------------
 
 -- Hub 1: Bogota
-INSERT INTO sq_change_orders (id, hub_id, title, change_type, description, status, requested_by, created_at) VALUES
+INSERT INTO sq_change_orders (id, hub_id, title, change_type, description, status, submitted_by_user_id, created_at) VALUES
 ('44444444-4444-4444-4444-444444010101', '11111111-1111-1111-1111-111111111101', 'Add Senior Financial Analyst',         'add',    'Backfill for Valentina''s promotion. Need senior-level FP&A support to handle expanded reporting scope.',                'approved',     '22222222-2222-2222-2222-222222222201', '2024-09-15T00:00:00Z'),
 ('44444444-4444-4444-4444-444444010102', '11111111-1111-1111-1111-111111111101', 'Add Operations Analyst',               'add',    'New headcount to support Q1 2025 volume increase in reconciliation processing.',                                         'submitted',    '22222222-2222-2222-2222-222222222201', '2024-10-10T00:00:00Z'),
 ('44444444-4444-4444-4444-444444010103', '11111111-1111-1111-1111-111111111101', 'Modify Team Lead compensation',        'modify', 'Adjust Santiago Herrera''s compensation to match market rate. Current rate below Vendor C benchmark by 12%.',             'under_review', '22222222-2222-2222-2222-222222222201', '2024-10-25T00:00:00Z'),
 ('44444444-4444-4444-4444-444444010104', '11111111-1111-1111-1111-111111111101', 'Remove open QA position',              'remove', 'QA function being consolidated into Bangalore vendor hub. Cancel open requisition.',                                     'draft',        '22222222-2222-2222-2222-222222222201', '2024-11-01T00:00:00Z');
 
 -- Hub 2: Bangalore Vendor
-INSERT INTO sq_change_orders (id, hub_id, title, change_type, description, status, requested_by, created_at) VALUES
+INSERT INTO sq_change_orders (id, hub_id, title, change_type, description, status, submitted_by_user_id, created_at) VALUES
 ('44444444-4444-4444-4444-444444020101', '11111111-1111-1111-1111-111111111102', 'Add Senior Software Developer',        'add',    'Need senior-level Java/Spring developer for payment processing platform.',                                               'approved',     '22222222-2222-2222-2222-222222222203', '2024-08-20T00:00:00Z'),
 ('44444444-4444-4444-4444-444444020102', '11111111-1111-1111-1111-111111111102', 'Add Data Analyst',                     'add',    'Additional data analyst for new business intelligence initiative launching in Q1 2025.',                                 'submitted',    '22222222-2222-2222-2222-222222222203', '2024-09-25T00:00:00Z'),
 ('44444444-4444-4444-4444-444444020103', '11111111-1111-1111-1111-111111111102', 'Modify QA Specialist to Senior level', 'modify', 'Promote Divya Natarajan from QA Specialist to Senior QA Specialist. Performance consistently exceeds expectations.',     'approved',     '22222222-2222-2222-2222-222222222203', '2024-10-05T00:00:00Z'),
@@ -269,26 +297,26 @@ INSERT INTO sq_change_orders (id, hub_id, title, change_type, description, statu
 ('44444444-4444-4444-4444-444444020105', '11111111-1111-1111-1111-111111111102', 'Remove open Project Manager position', 'remove', 'PMO restructuring — combining two PM roles into one senior PM role.',                                                    'rejected',     '22222222-2222-2222-2222-222222222202', '2024-11-05T00:00:00Z');
 
 -- Hub 3: Bangalore Internal
-INSERT INTO sq_change_orders (id, hub_id, title, change_type, description, status, requested_by, created_at) VALUES
+INSERT INTO sq_change_orders (id, hub_id, title, change_type, description, status, submitted_by_user_id, created_at) VALUES
 ('44444444-4444-4444-4444-444444030101', '11111111-1111-1111-1111-111111111103', 'Add Senior Financial Analyst',         'add',    'Growing FP&A workload requires additional senior-level support for quarterly close process.',                            'approved',     '22222222-2222-2222-2222-222222222203', '2024-09-01T00:00:00Z'),
 ('44444444-4444-4444-4444-444444030102', '11111111-1111-1111-1111-111111111103', 'Add Customer Success Specialist',      'add',    'Expanding client services team to support APAC region growth.',                                                          'submitted',    '22222222-2222-2222-2222-222222222203', '2024-10-15T00:00:00Z'),
 ('44444444-4444-4444-4444-444444030103', '11111111-1111-1111-1111-111111111103', 'Modify Process Specialist role scope', 'modify', 'Expand Anita Rao''s scope to include vendor management responsibilities. Adjust title and compensation accordingly.',     'draft',        '22222222-2222-2222-2222-222222222203', '2024-11-01T00:00:00Z');
 
 -- Hub 4: Baroda
-INSERT INTO sq_change_orders (id, hub_id, title, change_type, description, status, requested_by, created_at) VALUES
+INSERT INTO sq_change_orders (id, hub_id, title, change_type, description, status, submitted_by_user_id, created_at) VALUES
 ('44444444-4444-4444-4444-444444040101', '11111111-1111-1111-1111-111111111104', 'Add Financial Analyst',                'add',    'Additional AP support needed for new ERP migration data validation project.',                                            'submitted',    '22222222-2222-2222-2222-222222222201', '2024-09-20T00:00:00Z'),
 ('44444444-4444-4444-4444-444444040102', '11111111-1111-1111-1111-111111111104', 'Add Operations Analyst',               'add',    'Volume growth in data processing team requires additional junior analyst.',                                              'approved',     '22222222-2222-2222-2222-222222222201', '2024-10-01T00:00:00Z'),
 ('44444444-4444-4444-4444-444444040103', '11111111-1111-1111-1111-111111111104', 'Modify Team Lead to Manager',          'modify', 'Promote Manish Shah from Team Lead to Operations Manager given expanded scope and direct reports.',                      'under_review', '22222222-2222-2222-2222-222222222201', '2024-10-20T00:00:00Z'),
 ('44444444-4444-4444-4444-444444040104', '11111111-1111-1111-1111-111111111104', 'Remove QA Specialist position',        'remove', 'QA responsibilities being absorbed by process specialists. Chirag Mehta transitioning to process role.',                 'draft',        '22222222-2222-2222-2222-222222222201', '2024-11-05T00:00:00Z');
 
 -- Hub 5: Athens
-INSERT INTO sq_change_orders (id, hub_id, title, change_type, description, status, requested_by, created_at) VALUES
+INSERT INTO sq_change_orders (id, hub_id, title, change_type, description, status, submitted_by_user_id, created_at) VALUES
 ('44444444-4444-4444-4444-444444050101', '11111111-1111-1111-1111-111111111105', 'Add Senior Business Analyst',          'add',    'Strategic hire to lead new European regulatory compliance workstream.',                                                  'approved',     '22222222-2222-2222-2222-222222222201', '2024-08-15T00:00:00Z'),
 ('44444444-4444-4444-4444-444444050102', '11111111-1111-1111-1111-111111111105', 'Add Customer Success Specialist',      'add',    'Expanding EMEA client coverage. Multilingual candidate preferred (English + French or German).',                         'submitted',    '22222222-2222-2222-2222-222222222201', '2024-10-10T00:00:00Z'),
 ('44444444-4444-4444-4444-444444050103', '11111111-1111-1111-1111-111111111105', 'Modify Project Manager compensation',  'modify', 'Annual compensation review — Dimitris Papadopoulos due for market adjustment.',                                          'approved',     '22222222-2222-2222-2222-222222222201', '2024-09-20T00:00:00Z');
 
 -- Hub 6: South Africa
-INSERT INTO sq_change_orders (id, hub_id, title, change_type, description, status, requested_by, created_at) VALUES
+INSERT INTO sq_change_orders (id, hub_id, title, change_type, description, status, submitted_by_user_id, created_at) VALUES
 ('44444444-4444-4444-4444-444444060101', '11111111-1111-1111-1111-111111111106', 'Add Senior Customer Success Specialist','add',   'Need experienced team member to mentor junior CSS team and handle escalations.',                                         'submitted',    '22222222-2222-2222-2222-222222222201', '2024-09-10T00:00:00Z'),
 ('44444444-4444-4444-4444-444444060102', '11111111-1111-1111-1111-111111111106', 'Add Operations Analyst',               'add',    'Second analyst for growing ops analytics function. Will focus on reporting automation.',                                 'approved',     '22222222-2222-2222-2222-222222222201', '2024-09-25T00:00:00Z'),
 ('44444444-4444-4444-4444-444444060103', '11111111-1111-1111-1111-111111111106', 'Modify Data Analyst to Senior',        'modify', 'Promote David Pretorius based on exceptional performance and expanded data engineering responsibilities.',               'under_review', '22222222-2222-2222-2222-222222222201', '2024-10-15T00:00:00Z'),
@@ -297,9 +325,9 @@ INSERT INTO sq_change_orders (id, hub_id, title, change_type, description, statu
 -- ---------------------------------------------------------------------------
 -- 7. Contracts (2, one per vendor hub)
 -- ---------------------------------------------------------------------------
-INSERT INTO sq_contracts (id, hub_id, vendor_name, contract_number, total_value, currency, start_date, end_date, access_level, status, created_at) VALUES
-('55555555-5555-5555-5555-555555550101', '11111111-1111-1111-1111-111111111101', 'Vendor C', 'SOW-2024-001', 2400000.00, 'USD', '2024-01-01', '2025-12-31', 'standard',   'active', '2023-12-15T00:00:00Z'),
-('55555555-5555-5555-5555-555555550201', '11111111-1111-1111-1111-111111111102', 'Vendor G', 'SOW-2024-002', 3200000.00, 'USD', '2024-03-01', '2026-02-28', 'restricted', 'active', '2024-02-15T00:00:00Z');
+INSERT INTO sq_contracts (id, hub_id, vendor_name, sow_number, total_value, currency, start_date, end_date, access_level, created_at) VALUES
+('55555555-5555-5555-5555-555555550101', '11111111-1111-1111-1111-111111111101', 'Vendor C', 'SOW-2024-001', 2400000.00, 'USD', '2024-01-01', '2025-12-31', 'standard',   '2023-12-15T00:00:00Z'),
+('55555555-5555-5555-5555-555555550201', '11111111-1111-1111-1111-111111111102', 'Vendor G', 'SOW-2024-002', 3200000.00, 'USD', '2024-03-01', '2026-02-28', 'restricted', '2024-02-15T00:00:00Z');
 
 -- ---------------------------------------------------------------------------
 -- 8. Invoices + Line Items
@@ -309,7 +337,7 @@ INSERT INTO sq_contracts (id, hub_id, vendor_name, contract_number, total_value,
 INSERT INTO sq_invoices (id, hub_id, vendor_name, invoice_number, total_amount, currency, invoice_date, due_date, status, created_at) VALUES
 ('66666666-6666-6666-6666-666666660101', '11111111-1111-1111-1111-111111111101', 'Vendor C', 'INV-2024-0089', 185000.00, 'USD', '2024-11-01', '2024-11-30', 'in_review', '2024-11-02T00:00:00Z');
 
-INSERT INTO sq_invoice_line_items (id, invoice_id, employee_name, role_title, days_worked, daily_rate, amount, approval_status, created_at) VALUES
+INSERT INTO sq_invoice_line_items (id, invoice_id, employee_name, role_title, days_worked, rate, amount, approval_status, created_at) VALUES
 ('77777777-7777-7777-7777-777777010101', '66666666-6666-6666-6666-666666660101', 'Alejandro Gomez',     'Operations Analyst',         21, 160.00, 3360.00,  'approved', '2024-11-02T00:00:00Z'),
 ('77777777-7777-7777-7777-777777010102', '66666666-6666-6666-6666-666666660101', 'Valentina Torres',    'Financial Analyst',          22, 250.00, 5500.00,  'approved', '2024-11-02T00:00:00Z'),
 ('77777777-7777-7777-7777-777777010103', '66666666-6666-6666-6666-666666660101', 'Santiago Herrera',     'Team Lead',                  22, 400.00, 8800.00,  'approved', '2024-11-02T00:00:00Z'),
@@ -324,7 +352,7 @@ INSERT INTO sq_invoice_line_items (id, invoice_id, employee_name, role_title, da
 INSERT INTO sq_invoices (id, hub_id, vendor_name, invoice_number, total_amount, currency, invoice_date, due_date, status, created_at) VALUES
 ('66666666-6666-6666-6666-666666660201', '11111111-1111-1111-1111-111111111102', 'Vendor G', 'INV-2024-0156', 245000.00, 'USD', '2024-11-15', '2024-12-15', 'pending', '2024-11-16T00:00:00Z');
 
-INSERT INTO sq_invoice_line_items (id, invoice_id, employee_name, role_title, days_worked, daily_rate, amount, approval_status, created_at) VALUES
+INSERT INTO sq_invoice_line_items (id, invoice_id, employee_name, role_title, days_worked, rate, amount, approval_status, created_at) VALUES
 ('77777777-7777-7777-7777-777777020101', '66666666-6666-6666-6666-666666660201', 'Arun Kumar',          'Software Developer',         22, 220.00, 4840.00,  'pending',  '2024-11-16T00:00:00Z'),
 ('77777777-7777-7777-7777-777777020102', '66666666-6666-6666-6666-666666660201', 'Deepika Menon',       'QA Specialist',              21, 190.00, 3990.00,  'pending',  '2024-11-16T00:00:00Z'),
 ('77777777-7777-7777-7777-777777020103', '66666666-6666-6666-6666-666666660201', 'Suresh Venkatesh',    'Team Lead',                  22, 380.00, 8360.00,  'approved', '2024-11-16T00:00:00Z'),
@@ -348,7 +376,7 @@ INSERT INTO sq_release_notes (id, version, release_date, features, bug_fixes, cr
 -- ---------------------------------------------------------------------------
 -- 10. User Guide Sections
 -- ---------------------------------------------------------------------------
-INSERT INTO sq_user_guide (id, section_title, section_order, content_markdown, created_at) VALUES
+INSERT INTO sq_user_guide_sections (id, title, section_order, content_markdown, updated_at) VALUES
 
 ('99999999-9999-9999-9999-999999990101', 'Getting Started', 1,
 '## Getting Started
