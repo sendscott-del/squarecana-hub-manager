@@ -14,11 +14,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (loading) return
+
     // Not logged in and not on auth page -> redirect to login
     if (!user && !isAuthPage) {
       router.push('/auth/login')
+      return
     }
-  }, [loading, user, isAuthPage, router])
+
+    // Logged in but pending/no profile -> redirect to pending page
+    if (user && !isAuthPage && (!profile || profile.status === 'pending')) {
+      router.push('/auth/pending')
+      return
+    }
+  }, [loading, user, profile, isAuthPage, router])
 
   if (loading) {
     return (
@@ -43,9 +51,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return null
   }
 
-  // Logged in but no profile or not active — show without shell
+  // Pending or no profile — show nothing while redirecting
   if (!profile || profile.status !== 'active') {
-    return <>{children}</>
+    return null
   }
 
   return (

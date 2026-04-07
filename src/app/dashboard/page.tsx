@@ -26,7 +26,7 @@ export default function DashboardPage() {
   const [filters, setFilters] = useState({ hub: 'all', department: 'all', roleType: 'all' })
   const supabase = createClient()
 
-  const canView = currentUser?.role === 'executive' || currentUser?.is_admin || currentUser?.role === 'central_ops'
+  const canView = !!currentUser?.role
 
   useEffect(() => {
     if (!canView) { setLoading(false); return }

@@ -23,7 +23,7 @@ export default function ChangeOrdersPage() {
   const [filters, setFilters] = useState({ hub: 'all', status: 'all', changeType: 'all' })
   const supabase = createClient()
 
-  const canCreate = ['functional_leader', 'hub_leader', 'central_ops'].includes(currentUser?.role || '')
+  const canCreate = ['functional_leader', 'central_ops', 'executive'].includes(currentUser?.role || '')
 
   useEffect(() => {
     const fetch = async () => {
@@ -33,12 +33,10 @@ export default function ChangeOrdersPage() {
       ])
       if (hubRes.data) setHubs(hubRes.data)
       if (orderRes.data) {
-        // Filter by role
+        // Functional leaders see only their own submissions
         let filtered = orderRes.data as unknown as ChangeOrder[]
         if (currentUser?.role === 'functional_leader') {
           filtered = filtered.filter(o => o.submitted_by_user_id === currentUser.id)
-        } else if (currentUser?.role === 'hub_leader') {
-          filtered = filtered.filter(o => o.hub_id === currentUser.hub_id)
         }
         setOrders(filtered)
       }

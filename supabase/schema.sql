@@ -778,12 +778,14 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  INSERT INTO sq_users (id, email, status)
+  INSERT INTO sq_users (id, email, full_name, status)
   VALUES (
     NEW.id,
     COALESCE(NEW.email, ''),
+    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
     'pending'
-  );
+  )
+  ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
 END;
 $$;

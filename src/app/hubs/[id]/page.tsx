@@ -38,8 +38,7 @@ export default function HubDetailPage() {
   const [activeSection, setActiveSection] = useState('overview')
   const supabase = createClient()
 
-  const canEdit = currentUser?.role === 'central_ops' ||
-    (currentUser?.role === 'hub_leader' && currentUser?.hub_id === id)
+  const canEdit = currentUser?.role === 'executive' || currentUser?.role === 'central_ops'
 
   useEffect(() => {
     const fetchData = async () => {

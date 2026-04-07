@@ -32,7 +32,7 @@ export default function ContractsPage() {
   const [filters, setFilters] = useState({ hub: 'all', status: 'all' })
   const supabase = createClient()
 
-  const isCentralOps = currentUser?.role === 'central_ops'
+  const canManage = currentUser?.role === 'central_ops' || currentUser?.role === 'executive'
   const isExecutive = currentUser?.role === 'executive'
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function ContractsPage() {
       if (contractRes.data) {
         let filtered = contractRes.data as unknown as Contract[]
         // Non-central_ops/admin can only see standard contracts
-        if (!isCentralOps && !currentUser?.is_admin) {
+        if (!canManage && !currentUser?.is_admin) {
           filtered = filtered.filter(c => c.access_level === 'standard')
         }
         setContracts(filtered)
@@ -66,7 +66,7 @@ export default function ContractsPage() {
   return (
     <div>
       <PageHeader title="Contracts & SOW" description="Manage vendor contracts and statements of work">
-        {isCentralOps && (
+        {canManage && (
           <Link href="/contracts/new">
             <Button className="bg-[#0F2952]"><Plus className="h-4 w-4 mr-2" />New Contract</Button>
           </Link>

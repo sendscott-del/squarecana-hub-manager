@@ -28,25 +28,23 @@ export const STATUS_LABELS: Record<string, string> = {
   in_review: 'In Review',
   paid: 'Paid',
   disputed: 'Disputed',
-  functional_leader: 'Functional Leader',
-  central_ops: 'Central Operations',
-  hub_leader: 'Hub Leader',
   executive: 'Executive',
+  central_ops: 'Central Operations',
+  functional_leader: 'Functional Leader',
 }
 
 export const ROLE_LABELS: Record<string, string> = {
-  functional_leader: 'Functional / Country Leader',
-  central_ops: 'Central Operations',
-  hub_leader: 'Hub Leader',
-  executive: 'Executive',
+  executive: 'Executive (Full Access)',
+  central_ops: 'Central Operations (View & Edit)',
+  functional_leader: 'Functional Leader (View & Submit)',
 }
 
 export const NAV_ITEMS = [
-  { label: 'Dashboard', href: '/dashboard', icon: 'LayoutDashboard', roles: ['executive', 'central_ops', 'functional_leader', 'hub_leader'] },
-  { label: 'Hubs', href: '/hubs', icon: 'Building2', roles: ['executive', 'central_ops', 'functional_leader', 'hub_leader'] },
-  { label: 'Change Orders', href: '/change-orders', icon: 'FileEdit', roles: ['executive', 'central_ops', 'functional_leader', 'hub_leader'] },
-  { label: 'Contracts & SOW', href: '/contracts', icon: 'FileText', roles: ['executive', 'central_ops', 'functional_leader', 'hub_leader'] },
-  { label: 'Invoices', href: '/invoices', icon: 'Receipt', roles: ['executive', 'central_ops', 'functional_leader', 'hub_leader'] },
-  { label: 'Documentation', href: '/docs/release-notes', icon: 'BookOpen', roles: ['executive', 'central_ops', 'functional_leader', 'hub_leader'] },
-  { label: 'Settings', href: '/settings', icon: 'Settings', adminOnly: true, roles: ['central_ops'] },
+  { label: 'Dashboard', href: '/dashboard', icon: 'LayoutDashboard', roles: ['executive', 'central_ops', 'functional_leader'] },
+  { label: 'Hubs', href: '/hubs', icon: 'Building2', roles: ['executive', 'central_ops', 'functional_leader'] },
+  { label: 'Change Orders', href: '/change-orders', icon: 'FileEdit', roles: ['executive', 'central_ops', 'functional_leader'] },
+  { label: 'Contracts & SOW', href: '/contracts', icon: 'FileText', roles: ['executive', 'central_ops', 'functional_leader'] },
+  { label: 'Invoices', href: '/invoices', icon: 'Receipt', roles: ['executive', 'central_ops', 'functional_leader'] },
+  { label: 'Documentation', href: '/docs/release-notes', icon: 'BookOpen', roles: ['executive', 'central_ops', 'functional_leader'] },
+  { label: 'Settings', href: '/settings', icon: 'Settings', adminOnly: true, roles: ['executive', 'central_ops'] },
 ]

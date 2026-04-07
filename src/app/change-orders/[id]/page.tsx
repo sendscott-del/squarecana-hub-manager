@@ -27,7 +27,7 @@ export default function ChangeOrderDetailPage() {
   const [saving, setSaving] = useState(false)
   const supabase = createClient()
 
-  const isCentralOps = currentUser?.role === 'central_ops'
+  const canApprove = currentUser?.role === 'central_ops' || currentUser?.role === 'executive'
 
   useEffect(() => {
     const fetch = async () => {
@@ -157,7 +157,7 @@ export default function ChangeOrderDetailPage() {
             </CardContent>
           </Card>
 
-          {isCentralOps && nextStatuses[order.status] && (
+          {canApprove && nextStatuses[order.status] && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Actions</CardTitle>

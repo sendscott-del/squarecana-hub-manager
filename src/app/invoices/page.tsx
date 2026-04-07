@@ -26,7 +26,7 @@ export default function InvoicesPage() {
   const [tab, setTab] = useState('invoices')
   const supabase = createClient()
 
-  const canCreate = currentUser?.role === 'central_ops' || currentUser?.role === 'hub_leader'
+  const canCreate = currentUser?.role === 'central_ops' || currentUser?.role === 'executive'
   const isFunctionalLeader = currentUser?.role === 'functional_leader'
 
   useEffect(() => {

@@ -79,7 +79,7 @@ export default function InvoiceDetailPage() {
   const totalCount = lineItems.length
   const pct = totalCount > 0 ? Math.round((approvedCount / totalCount) * 100) : 0
 
-  const isCentralOps = currentUser?.role === 'central_ops'
+  const canManage = currentUser?.role === 'central_ops' || currentUser?.role === 'executive'
 
   return (
     <div>
@@ -181,7 +181,7 @@ export default function InvoiceDetailPage() {
             </CardContent>
           </Card>
 
-          {isCentralOps && (
+          {canManage && (
             <Card>
               <CardHeader><CardTitle className="text-base">Actions</CardTitle></CardHeader>
               <CardContent className="space-y-2">
