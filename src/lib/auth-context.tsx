@@ -31,21 +31,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const supabase = createClient()
 
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from('sq_users')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    setProfile(data)
+    try {
+      const { data } = await supabase
+        .from('sq_users')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      setProfile(data)
+    } catch (e) {
+      console.error('Failed to fetch profile:', e)
+    }
   }
 
   const fetchDemoMode = async () => {
-    const { data } = await supabase
-      .from('sq_settings')
-      .select('value')
-      .eq('key', 'demo_mode')
-      .single()
-    setDemoMode(data?.value === 'true')
+    try {
+      const { data } = await supabase
+        .from('sq_settings')
+        .select('value')
+        .eq('key', 'demo_mode')
+        .single()
+      setDemoMode(data?.value === 'true')
+    } catch (e) {
+      console.error('Failed to fetch demo mode:', e)
+    }
   }
 
   const refreshProfile = async () => {
@@ -62,13 +70,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      setUser(authUser)
-      if (authUser) {
-        await fetchProfile(authUser.id)
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+        setUser(authUser)
+        if (authUser) {
+          await fetchProfile(authUser.id)
+        }
+        await fetchDemoMode()
+      } catch (e) {
+        console.error('Auth init error:', e)
+      } finally {
+        setLoading(false)
       }
-      await fetchDemoMode()
-      setLoading(false)
     }
     init()
 
