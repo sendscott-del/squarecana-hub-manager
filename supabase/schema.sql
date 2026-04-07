@@ -4,54 +4,6 @@
 -- =============================================================================
 
 -- ============================================================
--- HELPER FUNCTIONS (used by RLS policies)
--- ============================================================
-
-CREATE OR REPLACE FUNCTION get_user_role()
-RETURNS text
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT role FROM sq_users WHERE id = auth.uid();
-$$;
-
-CREATE OR REPLACE FUNCTION is_admin()
-RETURNS boolean
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT COALESCE(
-    (SELECT is_admin FROM sq_users WHERE id = auth.uid() AND status = 'active'),
-    false
-  );
-$$;
-
-CREATE OR REPLACE FUNCTION get_user_hub_id()
-RETURNS uuid
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT hub_id FROM sq_users WHERE id = auth.uid();
-$$;
-
-CREATE OR REPLACE FUNCTION get_user_status()
-RETURNS text
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT status FROM sq_users WHERE id = auth.uid();
-$$;
-
-
--- ============================================================
 -- TABLES (ordered by dependency)
 -- ============================================================
 
@@ -273,6 +225,55 @@ CREATE INDEX idx_sq_invoice_reminders_sent_to_user_id ON sq_invoice_reminders (s
 
 -- sq_user_guide_sections
 CREATE INDEX idx_sq_user_guide_sections_order ON sq_user_guide_sections (section_order);
+
+
+-- ============================================================
+-- HELPER FUNCTIONS (used by RLS policies)
+-- Must be created after tables exist
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION get_user_role()
+RETURNS text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT role FROM sq_users WHERE id = auth.uid();
+$$;
+
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE(
+    (SELECT is_admin FROM sq_users WHERE id = auth.uid() AND status = 'active'),
+    false
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION get_user_hub_id()
+RETURNS uuid
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT hub_id FROM sq_users WHERE id = auth.uid();
+$$;
+
+CREATE OR REPLACE FUNCTION get_user_status()
+RETURNS text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT status FROM sq_users WHERE id = auth.uid();
+$$;
 
 
 -- ============================================================
