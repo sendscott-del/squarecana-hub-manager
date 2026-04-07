@@ -54,21 +54,17 @@ export default function DashboardPage() {
   }, [headcount, filters])
 
   const stats = useMemo(() => {
-    const totalFte = hubs.reduce((sum, h) => sum + ((h as Hub & { fte_count?: number }).fte_count || 0), 0)
+    const active = headcount.filter(h => h.status === 'active').length
     const open = headcount.filter(h => h.status === 'open').length
-    return { total: totalFte, active: totalFte - open, open, activeHubs: hubs.length }
+    return { total: active + open, active, open, activeHubs: hubs.length }
   }, [headcount, hubs])
 
   const hubChartData = useMemo(() => {
-    return hubs.map(hub => {
-      const fte = (hub as Hub & { fte_count?: number }).fte_count || 0
-      const openCount = headcount.filter(h => h.hub_id === hub.id && h.status === 'open').length
-      return {
-        name: hub.name.length > 15 ? hub.name.substring(0, 15) + '...' : hub.name,
-        active: fte - openCount,
-        open: openCount,
-      }
-    })
+    return hubs.map(hub => ({
+      name: hub.name.length > 15 ? hub.name.substring(0, 15) + '...' : hub.name,
+      active: headcount.filter(h => h.hub_id === hub.id && h.status === 'active').length,
+      open: headcount.filter(h => h.hub_id === hub.id && h.status === 'open').length,
+    }))
   }, [hubs, headcount])
 
   const roleTypeData = useMemo(() => {
