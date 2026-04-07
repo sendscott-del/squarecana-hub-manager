@@ -25,18 +25,10 @@ export default function HubsPage() {
         .order('name')
 
       if (hubData) {
-        // Fetch headcount counts
-        const hubsWithCounts = await Promise.all(
-          hubData.map(async (hub) => {
-            const { count } = await supabase
-              .from('sq_headcount')
-              .select('*', { count: 'exact', head: true })
-              .eq('hub_id', hub.id)
-              .eq('status', 'active')
-            return { ...hub, headcount_count: count || 0 }
-          })
-        )
-        setHubs(hubsWithCounts)
+        setHubs(hubData.map((hub: Hub & { fte_count?: number }) => ({
+          ...hub,
+          headcount_count: hub.fte_count || 0,
+        })))
       }
       setLoading(false)
     }
