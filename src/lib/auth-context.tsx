@@ -48,9 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadUserData = async (authUser: User, token: string) => {
     try {
-      // Fetch profile via direct REST
+      console.log('[auth] user id:', authUser.id, 'email:', authUser.email)
+
+      // Fetch profile — let RLS filter by auth.uid(), don't filter by id in URL
       const profiles = await fetchFromSupabase(
-        `sq_users?id=eq.${authUser.id}&select=*`,
+        `sq_users?select=*&limit=10`,
         token
       )
       console.log('[auth] profile result:', profiles)
