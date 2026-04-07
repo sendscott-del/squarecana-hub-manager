@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { AppUser } from '@/lib/types'
 import type { User } from '@supabase/supabase-js'
@@ -29,30 +29,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [demoMode, setDemoMode] = useState(false)
 
-  const fetchProfile = async (supabase: ReturnType<typeof createClient>, userId: string) => {
-    const { data, error } = await supabase
-      .from('sq_users')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    console.log('[auth] profile fetch:', { data: !!data, error: error?.message })
-    if (data) setProfile(data)
-  }
+  const loadProfile = useCallback(async (userId: string) => {
+    try {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('sq_users')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      if (data) setProfile(data)
+    } catch (e) {
+      console.error('[auth] profile error:', e)
+    }
+  }, [])
 
-  const fetchDemoMode = async (supabase: ReturnType<typeof createClient>) => {
-    const { data, error } = await supabase
-      .from('sq_settings')
-      .select('value')
-      .eq('key', 'demo_mode')
-      .single()
-    console.log('[auth] demo mode fetch:', { data: data?.value, error: error?.message })
-    setDemoMode(data?.value === 'true')
-  }
+  const loadDemoMode = useCallback(async () => {
+    try {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('sq_settings')
+        .select('value')
+        .eq('key', 'demo_mode')
+        .maybeSingle()
+      setDemoMode(data?.value === 'true')
+    } catch (e) {
+      console.error('[auth] demo mode error:', e)
+    }
+  }, [])
 
   const refreshProfile = async () => {
-    const supabase = createClient()
-    if (user) await fetchProfile(supabase, user.id)
-    await fetchDemoMode(supabase)
+    if (user) await loadProfile(user.id)
+    await loadDemoMode()
   }
 
   const signOut = async () => {
@@ -64,53 +71,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    console.log('[auth] useEffect fired')
     const supabase = createClient()
 
-    // Safety timeout — never hang on loading forever
-    const timeout = setTimeout(() => {
-      console.log('[auth] timeout — forcing loading=false')
-      setLoading(false)
-    }, 5000)
-
-    const init = async () => {
-      try {
-        console.log('[auth] calling getSession...')
-        const { data: { session }, error: authError } = await supabase.auth.getSession()
+    // Listen for auth changes (sign in, sign out, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('[auth] state change:', event, session?.user?.email)
         const authUser = session?.user ?? null
-        console.log('[auth] getSession result:', { user: authUser?.email, error: authError?.message })
         setUser(authUser)
 
         if (authUser) {
-          await fetchProfile(supabase, authUser.id)
-        }
-        await fetchDemoMode(supabase)
-      } catch (e) {
-        console.error('[auth] init error:', e)
-      } finally {
-        clearTimeout(timeout)
-        console.log('[auth] setting loading=false')
-        setLoading(false)
-      }
-    }
-    init()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setUser(session?.user ?? null)
-        if (session?.user) {
-          await fetchProfile(supabase, session.user.id)
+          await loadProfile(authUser.id)
+          await loadDemoMode()
         } else {
           setProfile(null)
         }
+
+        setLoading(false)
       }
     )
+
+    // Also check for existing session without blocking
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('[auth] initial session:', session?.user?.email ?? 'none')
+      if (session?.user) {
+        setUser(session.user)
+        loadProfile(session.user.id)
+        loadDemoMode()
+      }
+      setLoading(false)
+    }).catch(() => {
+      console.log('[auth] getSession failed, continuing without session')
+      setLoading(false)
+    })
+
+    // Safety timeout
+    const timeout = setTimeout(() => {
+      console.log('[auth] timeout — forcing loading=false')
+      setLoading(false)
+    }, 3000)
 
     return () => {
       clearTimeout(timeout)
       subscription.unsubscribe()
     }
-  }, [])
+  }, [loadProfile, loadDemoMode])
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, demoMode, refreshProfile, signOut }}>
