@@ -40,7 +40,7 @@ export default function LoginPage() {
         .from('sq_users')
         .select('status')
         .eq('id', user.id)
-        .single()
+        .single() as { data: { status: string } | null }
 
       if (profile?.status === 'pending') {
         router.push('/auth/pending')
