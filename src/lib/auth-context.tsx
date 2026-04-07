@@ -28,40 +28,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<AppUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [demoMode, setDemoMode] = useState(false)
-  const supabase = createClient()
 
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data } = await supabase
-        .from('sq_users')
-        .select('*')
-        .eq('id', userId)
-        .single()
-      setProfile(data)
-    } catch (e) {
-      console.error('Failed to fetch profile:', e)
-    }
+  const fetchProfile = async (supabase: ReturnType<typeof createClient>, userId: string) => {
+    const { data, error } = await supabase
+      .from('sq_users')
+      .select('*')
+      .eq('id', userId)
+      .single()
+    console.log('[auth] profile fetch:', { data: !!data, error: error?.message })
+    if (data) setProfile(data)
   }
 
-  const fetchDemoMode = async () => {
-    try {
-      const { data } = await supabase
-        .from('sq_settings')
-        .select('value')
-        .eq('key', 'demo_mode')
-        .single()
-      setDemoMode(data?.value === 'true')
-    } catch (e) {
-      console.error('Failed to fetch demo mode:', e)
-    }
+  const fetchDemoMode = async (supabase: ReturnType<typeof createClient>) => {
+    const { data, error } = await supabase
+      .from('sq_settings')
+      .select('value')
+      .eq('key', 'demo_mode')
+      .single()
+    console.log('[auth] demo mode fetch:', { data: data?.value, error: error?.message })
+    setDemoMode(data?.value === 'true')
   }
 
   const refreshProfile = async () => {
-    if (user) await fetchProfile(user.id)
-    await fetchDemoMode()
+    const supabase = createClient()
+    if (user) await fetchProfile(supabase, user.id)
+    await fetchDemoMode(supabase)
   }
 
   const signOut = async () => {
+    const supabase = createClient()
     await supabase.auth.signOut()
     setUser(null)
     setProfile(null)
@@ -69,17 +64,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
+    console.log('[auth] useEffect fired')
+    const supabase = createClient()
+
+    // Safety timeout — never hang on loading forever
+    const timeout = setTimeout(() => {
+      console.log('[auth] timeout — forcing loading=false')
+      setLoading(false)
+    }, 5000)
+
     const init = async () => {
       try {
-        const { data: { user: authUser } } = await supabase.auth.getUser()
+        console.log('[auth] calling getUser...')
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+        console.log('[auth] getUser result:', { user: authUser?.email, error: authError?.message })
         setUser(authUser)
+
         if (authUser) {
-          await fetchProfile(authUser.id)
+          await fetchProfile(supabase, authUser.id)
         }
-        await fetchDemoMode()
+        await fetchDemoMode(supabase)
       } catch (e) {
-        console.error('Auth init error:', e)
+        console.error('[auth] init error:', e)
       } finally {
+        clearTimeout(timeout)
+        console.log('[auth] setting loading=false')
         setLoading(false)
       }
     }
@@ -89,15 +98,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (_event, session) => {
         setUser(session?.user ?? null)
         if (session?.user) {
-          await fetchProfile(session.user.id)
+          await fetchProfile(supabase, session.user.id)
         } else {
           setProfile(null)
         }
       }
     )
 
-    return () => subscription.unsubscribe()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      clearTimeout(timeout)
+      subscription.unsubscribe()
+    }
   }, [])
 
   return (
