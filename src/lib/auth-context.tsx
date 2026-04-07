@@ -75,9 +75,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const init = async () => {
       try {
-        console.log('[auth] calling getUser...')
-        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
-        console.log('[auth] getUser result:', { user: authUser?.email, error: authError?.message })
+        console.log('[auth] calling getSession...')
+        const { data: { session }, error: authError } = await supabase.auth.getSession()
+        const authUser = session?.user ?? null
+        console.log('[auth] getSession result:', { user: authUser?.email, error: authError?.message })
         setUser(authUser)
 
         if (authUser) {
