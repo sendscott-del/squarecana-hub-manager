@@ -1,11 +1,24 @@
 'use client'
 
 import { useAuth } from '@/lib/auth-context'
+import { usePathname, useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { Sidebar } from './sidebar'
 import { DemoBanner } from './demo-banner'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { loading, profile } = useAuth()
+  const { loading, profile, user } = useAuth()
+  const pathname = usePathname()
+  const router = useRouter()
+  const isAuthPage = pathname.startsWith('/auth')
+
+  useEffect(() => {
+    if (loading) return
+    // Not logged in and not on auth page -> redirect to login
+    if (!user && !isAuthPage) {
+      router.push('/auth/login')
+    }
+  }, [loading, user, isAuthPage, router])
 
   if (loading) {
     return (
@@ -20,6 +33,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     )
   }
 
+  // Auth pages render without shell
+  if (isAuthPage) {
+    return <>{children}</>
+  }
+
+  // Not logged in — show nothing while redirecting
+  if (!user) {
+    return null
+  }
+
+  // Logged in but no profile or not active — show without shell
   if (!profile || profile.status !== 'active') {
     return <>{children}</>
   }
